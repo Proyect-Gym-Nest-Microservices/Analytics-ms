@@ -1,0 +1,217 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model UserStatistics {
+  id            String              @id @default(auto()) @map("_id") @db.ObjectId
+  totalUsers    Int // Usuarios Totales
+  newUsers      Int // Usuarios nuevos 
+  activeUsers   Int // Usuarios que han ingresado en el período
+  inactiveUsers Int // Usuarios inactivos
+  period        Period // 
+  date          DateTime            @default(now())
+  genderStats   UserGenderStats[]
+  goalStats     UserGoalStats[]
+  ageRangeStats UserAgeRangeStats[]
+
+  @@unique([period, date])
+}
+
+model UserGenderStats {
+  id         String         @id @default(auto()) @map("_id") @db.ObjectId
+  userStatId String         @db.ObjectId
+  userStat   UserStatistics @relation(fields: [userStatId], references: [id])
+  gender     Gender
+  count      Int
+
+  @@unique([userStatId, gender])
+}
+
+model UserGoalStats {
+  id         String         @id @default(auto()) @map("_id") @db.ObjectId
+  userStatId String         @db.ObjectId
+  userStat   UserStatistics @relation(fields: [userStatId], references: [id])
+  goal       Goal
+  count      Int
+
+  @@unique([userStatId, goal])
+}
+
+model UserAgeRangeStats {
+  id         String         @id @default(auto()) @map("_id") @db.ObjectId
+  userStatId String         @db.ObjectId
+  userStat   UserStatistics @relation(fields: [userStatId], references: [id])
+  ageRange   AgeRange
+  count      Int
+
+  @@unique([userStatId, ageRange])
+}
+
+model ExerciseStatistics {
+  id              String                @id @default(auto()) @map("_id") @db.ObjectId
+  exerciseId      Int // Referencia al ID del ejercicio
+  totalUses       Int // Número total de veces usado
+  popularityScore Float // Puntuación basada en usos y ratings
+  averageWeight   Float? // Peso promedio usado
+  averageReps     Int // Repeticiones promedio
+  period          Period
+  date            DateTime              @default(now())
+  genderStats     ExerciseGenderStats[]
+
+  @@unique([exerciseId, period, date])
+}
+
+model ExerciseGenderStats {
+  id             String             @id @default(auto()) @map("_id") @db.ObjectId
+  exerciseStatId String             @db.ObjectId
+  exerciseStat   ExerciseStatistics @relation(fields: [exerciseStatId], references: [id])
+  gender         Gender
+  useCount       Int
+  averageWeight  Float? // Peso promedio usado  por genero
+  averageReps    Int // Repeticiones promedio por genero
+
+  @@unique([exerciseStatId, gender])
+}
+
+model WorkoutStatistics {
+  id               String                   @id @default(auto()) @map("_id") @db.ObjectId
+  workoutId        Int // Referencia al ID del workout
+  totalCompletions Int // Número de veces completado
+  averageDuration  Int // Duración promedio en minutos
+  genderStats      WorkoutGenderStats[]
+  popularityScore  Float // Puntuación basada en completions y ratings
+  period           Period
+  date             DateTime                 @default(now())
+  completionStats  WorkoutCompletionStats[]
+
+  @@unique([workoutId, period, date])
+}
+
+model WorkoutGenderStats {
+  id               String            @id @default(auto()) @map("_id") @db.ObjectId
+  workoutStatId    String            @db.ObjectId
+  workoutStat      WorkoutStatistics @relation(fields: [workoutStatId], references: [id])
+  gender           Gender
+  totalCompletions Int // Número de veces completado por genero
+  averageDuration  Int // Duración promedio en minutos por genero
+
+  @@unique([workoutStatId, gender])
+}
+
+model WorkoutCompletionStats {
+  id               String            @id @default(auto()) @map("_id") @db.ObjectId
+  workoutStatId    String            @db.ObjectId
+  workoutStat      WorkoutStatistics @relation(fields: [workoutStatId], references: [id])
+  completionStatus CompletionStatus
+  count            Int
+
+  @@unique([workoutStatId, completionStatus])
+}
+
+model EquipmentStatistics {
+  id                   String                 @id @default(auto()) @map("_id") @db.ObjectId
+  equipmentId          Int // Referencia al ID del equipment
+  totalUses            Int // Número total de usos
+  averageTimeOfUse     Int // Tiempo promedio de uso en minutos
+  period               Period
+  date                 DateTime               @default(now())
+  genderStats EquipmentGenderStats[]
+  hourlyStats EquipmentHourlyStats[]
+
+  @@unique([equipmentId, period, date])
+}
+
+model EquipmentGenderStats {
+  id                    String              @id @default(auto()) @map("_id") @db.ObjectId
+  equipmentStatisticsId String              @db.ObjectId
+  equipmentStat         EquipmentStatistics @relation(fields: [equipmentStatisticsId], references: [id])
+  gender                Gender
+  useCount             Int
+
+  @@unique([equipmentStatisticsId, gender])
+}
+
+model EquipmentHourlyStats {
+  id                    String                  @id @default(auto()) @map("_id") @db.ObjectId
+  equipmentStatId       String                  @db.ObjectId
+  equipmentStat         EquipmentStatistics @relation(fields: [equipmentStatId], references: [id])
+  hour                  Int                     // 0-23
+  useCount             Int
+  averageTimeOfUse     Int
+  
+  @@unique([equipmentStatId, hour])
+}
+
+
+model TrainingPlanStatistics {
+  id                      String                    @id @default(auto()) @map("_id") @db.ObjectId
+  trainingPlanId          Int      // Referencia al ID del training plan
+  totalEnrollments        Int      // Número de usuarios inscritos
+  completionRate          Float    // Tasa de finalización
+  averageCompletionTime   Int      // Tiempo promedio de finalización en días
+  abandonmentRate         Float    // Tasa de abandono
+  period                  Period
+  date                    DateTime                  @default(now())
+  genderStats             TrainingPlanGenderStats[]
+
+
+  @@unique([trainingPlanId, period, date])
+}
+
+model TrainingPlanGenderStats {
+  id                    String               @id @default(auto()) @map("_id") @db.ObjectId
+  trainingPlanStatId    String               @db.ObjectId
+  trainingPlanStat      TrainingPlanStatistics @relation(fields: [trainingPlanStatId], references: [id])
+  gender                Gender
+  enrollmentCount       Int // Inscripciones por género
+  completionCount       Int // Tasa de finalizacion por genero
+  averageCompletionTime   Int      // Tiempo promedio de finalización en días por genero
+  
+  @@unique([trainingPlanStatId, gender])
+}
+
+enum Period {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum AgeRange {
+  UNDER_18
+  AGE_18_24
+  AGE_25_34
+  AGE_35_44
+  AGE_45_54
+  AGE_55_PLUS
+}
+
+enum CompletionStatus {
+  COMPLETED
+  ABANDONED
+  IN_PROGRESS
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum Goal {
+  LOSE_WEIGHT
+  GAIN_MUSCLE
+  IMPROVE_ENDURANCE
+  MAINTAIN
+}
+
+enum Difficulty {
+  BASIC
+  INTERMEDIATE
+  ADVANCED
+}
