@@ -1,10 +1,10 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsObject, IsDate, IsArray, IsString, ValidateNested, IsEnum,} from 'class-validator';
+import { IsInt, IsNotEmpty, IsObject, IsDate, IsArray, IsString, ValidateNested, IsEnum, IsNumber, Min,} from 'class-validator';
 import { Period } from 'src/common/enums/period.enum';
 import { EquipmentGenderStatsDto } from './equipment-gender-stats.dto';
-import { EquipmentHourlyStatsDto } from './equipment-hourly-stats.dto';
+import { BaseStatsDto } from 'src/common/dto/base-stats.dto';
 
-export class EquipmentStatisticsDto {
+export class EquipmentStatisticsDto extends BaseStatsDto{
 
     @IsInt()
     equipmentId: number;
@@ -12,28 +12,14 @@ export class EquipmentStatisticsDto {
     @IsInt()
     totalUses: number;
 
-    @IsObject()
-    usesByGender: Record<string, number>; // Ejemplo de JSON
+    @IsNumber()
+    @Min(0)
+    popularityScore: number
 
-    @IsInt()
-    averageTimeOfUse: number;
-
-    @IsObject()
-    peakUsageHours: { hour: number };
-
-    @IsEnum(Period)
-    period: Period;
-
-    @IsDate()
-    date: Date;
 
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => EquipmentGenderStatsDto)
     genderStats: EquipmentGenderStatsDto[];
 
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => EquipmentHourlyStatsDto)
-    hourlyStats: EquipmentHourlyStatsDto[];
 }

@@ -13,7 +13,7 @@ export class UserStatisticsController {
   ) {
     return this.userStatisticsService.generateUserStatistics(
       payload.period,
-      payload.date
+      new Date(payload.date)
     );
   }
 
@@ -23,7 +23,7 @@ export class UserStatisticsController {
   ) {
     return this.userStatisticsService.getStatistics(
       payload.period,
-      payload.date
+      new Date(payload.date)
     );
   }
 }
