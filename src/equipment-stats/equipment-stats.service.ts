@@ -3,7 +3,7 @@ import { UpdateEquipmentStatDto } from './dto/update-equipment-stat.dto';
 import { NATS_SERVICE } from 'src/config';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { PrismaClient } from '@prisma/client';
-import { Period } from 'src/common/enums/period.enum';
+import { Period } from 'src/common/enums/analytics.enum';
 import { firstValueFrom } from 'rxjs';
 import { EquipmentStatisticsDto } from './dto';
 

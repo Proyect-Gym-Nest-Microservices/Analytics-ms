@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsInt, IsNotEmpty, IsObject, IsDate, IsArray, IsString, ValidateNested, IsEnum, IsNumber, Min,} from 'class-validator';
-import { Period } from 'src/common/enums/period.enum';
+import { Period } from 'src/common/enums/analytics.enum';
 import { EquipmentGenderStatsDto } from './equipment-gender-stats.dto';
 import { BaseStatsDto } from 'src/common/dto/base-stats.dto';
 
@@ -10,11 +10,13 @@ export class EquipmentStatisticsDto extends BaseStatsDto{
     equipmentId: number;
 
     @IsInt()
+    @Min(0)
     totalUses: number;
+  
 
     @IsNumber()
     @Min(0)
-    popularityScore: number
+    popularityScore: number;
 
 
     @IsArray()

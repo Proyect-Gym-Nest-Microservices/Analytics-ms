@@ -1,5 +1,5 @@
 import { IsEnum, IsInt, IsNumber, IsOptional, IsString, Min } from "class-validator";
-import { Gender } from "src/common/enums/period.enum";
+import { Gender } from "src/common/enums/analytics.enum";
 
 export class ExerciseGenderStatsDto {
 
@@ -10,11 +10,4 @@ export class ExerciseGenderStatsDto {
     @Min(0)
     useCount: number;
 
-    @IsNumber()
-    @IsOptional()
-    averageWeight?: number;
-
-    @IsInt()
-    @Min(0)
-    averageReps: number;
 }

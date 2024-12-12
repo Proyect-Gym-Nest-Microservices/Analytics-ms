@@ -1,20 +1,16 @@
-import { IsInt, IsString } from "class-validator";
+import { Gender } from "@prisma/client";
+import { IsEnum, IsInt, IsString, Min } from "class-validator";
 
 export class TrainingPlanGenderStatsDto {
 
-
-    @IsString()
-    trainingPlanStatId: string;
-
-    @IsString()
-    gender: string;
-
+    @IsEnum(Gender)
+    gender: Gender;
+  
     @IsInt()
+    @Min(0)
     enrollmentCount: number;
-
+  
     @IsInt()
+    @Min(0)
     completionCount: number;
-
-    @IsInt()
-    averageCompletionTime: number; // En días
 }

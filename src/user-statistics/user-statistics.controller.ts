@@ -1,7 +1,7 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { UserStatisticsService } from './user-statistics.service';
-import { Period } from 'src/common/enums/period.enum';
+import { Period } from 'src/common/enums/analytics.enum';
 
 @Controller()
 export class UserStatisticsController {

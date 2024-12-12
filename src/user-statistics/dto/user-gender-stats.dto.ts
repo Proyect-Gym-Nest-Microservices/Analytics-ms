@@ -1,5 +1,5 @@
-import { IsEnum, IsInt, IsString, Min } from "class-validator";
-import { Gender } from "src/common/enums/period.enum";
+import { IsEnum, IsInt, Min } from "class-validator";
+import { Gender } from "src/common/enums/analytics.enum";
 
 export class UserGenderStatsDto {
   

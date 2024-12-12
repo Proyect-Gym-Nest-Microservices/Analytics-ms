@@ -1,6 +1,6 @@
 import { Type } from "class-transformer";
-import { IsDate, IsEnum, IsString } from "class-validator";
-import { Period } from "../enums/period.enum";
+import { IsDate, IsEnum, IsOptional, IsString } from "class-validator";
+import { Period } from "../enums/analytics.enum";
 
 export class BaseStatsDto {
 

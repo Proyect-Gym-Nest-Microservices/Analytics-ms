@@ -1,11 +1,13 @@
-import { IsInt, IsString } from "class-validator";
+import { IsEnum, IsInt, IsString, Min } from "class-validator";
+import { Gender } from "src/common/enums/analytics.enum";
 
 
 export class EquipmentGenderStatsDto {
 
-    @IsString()
-    gender: string;
-
+    @IsEnum(Gender)
+    gender: Gender;
+  
     @IsInt()
+    @Min(0)
     useCount: number;
 }

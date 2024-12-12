@@ -1,17 +1,9 @@
 import { Type } from 'class-transformer';
-import {
-    IsInt,
-    IsNotEmpty,
-    IsObject,
-    IsDate,
-    IsArray,
-    IsString,
-    ValidateNested,
-    IsNumber,
-    IsEnum,
-} from 'class-validator';
-import { Period } from 'src/common/enums/period.enum';
+import {IsInt,IsDate,IsArray,ValidateNested,IsNumber,IsEnum, Min} from 'class-validator';
+import { Period } from 'src/common/enums/analytics.enum';
 import { TrainingPlanGenderStatsDto } from './trainingplan.gender.stats.dto';
+import { TrainingPlanDifficultyStatsDto } from './training-plan-difficulty-stats.dto';
+import { TrainingPlanCompletionStatsDto } from './training-plan-completion-stats.dto';
 
 export class TrainingPlanStatisticsDto {
 
@@ -22,23 +14,27 @@ export class TrainingPlanStatisticsDto {
     @IsInt()
     totalEnrollments: number;
 
-    @IsNumber()
-    completionRate: number;
-
     @IsInt()
-    averageCompletionTime: number; // En días
+    @Min(0)
+    totalCompletions: number;
 
-    @IsNumber()
-    abandonmentRate: number;
 
-    @IsEnum(Period)
-    period: Period;
 
-    @IsDate()
-    date: Date;
+
 
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => TrainingPlanGenderStatsDto)
     genderStats: TrainingPlanGenderStatsDto[];
+  
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => TrainingPlanDifficultyStatsDto)
+    difficultyStats: TrainingPlanDifficultyStatsDto[];
+  
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => TrainingPlanCompletionStatsDto)
+    completionStats: TrainingPlanCompletionStatsDto[];
+  
 }
