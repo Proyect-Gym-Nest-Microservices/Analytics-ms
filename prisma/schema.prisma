@@ -178,7 +178,7 @@ model EquipmentStatistics {
   id              String                 @id @default(auto()) @map("_id") @db.ObjectId
   equipmentId     Int                 
   totalUses       Int                    @default(0)
-  popularityScore Float // Puntuación basada en completions y ratings
+  popularityScore Float 
   period          Period
   date            DateTime               @default(now())
   genderStats     EquipmentGenderStats[]

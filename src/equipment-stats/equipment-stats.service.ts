@@ -11,208 +11,204 @@ import { EquipmentStatisticsDto } from './dto';
 export class EquipmentStatsService extends PrismaClient implements OnModuleInit {
   private readonly logger = new Logger('Equipment-Statistics-Service');
 
-  //constructor(
-  //  @Inject(NATS_SERVICE) private readonly client: ClientProxy,
-  //) { 
-  //  super()
-  //}
+  constructor(
+    @Inject(NATS_SERVICE) private readonly client: ClientProxy,
+  ) { 
+    super()
+  }
 
   async onModuleInit() {
     await this.$connect();
     this.logger.log('DataBase connected');
   }
+  
+  private handleError(error: any, defaultMessage: string, httpStatus: HttpStatus) {
+    if (error instanceof RpcException) {
+      throw error;
+    }
+    throw new RpcException({
+      status: httpStatus,
+      message: error.message || defaultMessage,
+    });
+  }
 
-  //async createEquipmentStatistics(equipmentStatisticsDto: EquipmentStatisticsDto) {
+  private getDateRangeByPeriod(date: Date, period: Period): { startDate: Date; endDate: Date } {
+    const startDate = new Date(date);
+    const endDate = new Date(date);
+
+    switch (period) {
+      case Period.DAILY:
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case Period.WEEKLY:
+        startDate.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+        endDate.setDate(startDate.getDate() + 6);
+        break;
+      case Period.MONTHLY:
+        startDate.setDate(1);
+        endDate.setMonth(endDate.getMonth() + 1);
+        endDate.setDate(0);
+        break;
+      case Period.YEARLY:
+        startDate.setMonth(0, 1);
+        endDate.setMonth(11, 31);
+        break;
+    }
+
+    return { startDate, endDate };
+  }
+
+  //async calculateEquipmentStatistics(equipmentId: number, period: Period, date: Date): Promise<EquipmentStatisticsDto> {
   //  try {
-  //    const equipmentStats = 'setDefaultAutoSelectFamily';
-  //    return equipmentStats;
+  //    const { startDate, endDate } = this.getDateRangeByPeriod(date, period);
 
-  //  } catch (error) {
-  //    throw new RpcException({
-  //      status: HttpStatus.INTERNAL_SERVER_ERROR,
-  //      message: 'Internal server error'
-  //    });
-  //  }
-  //}
+  //    // Obtener estadísticas por género
+  //    const genderStats = await this.calculateGenderStats(equipmentId, startDate, endDate);
 
-  //async findStatsByEquipmentId(equipmentId: number, period: Period) {
-  //  try {
-  //    const stats = await this.equipmentStatistics.findFirst({
-  //      where: {
-  //        equipmentId,
-  //        period
-  //      },
-  //      include: {
-  //        equipment: true,
-  //        genderStats: true
-  //      }
-  //    });
+  //    // Calcular usos totales
+  //    const totalUses = genderStats.reduce((sum, stat) => sum + stat.useCount, 0);
 
-  //    if (!stats) {
-  //      throw new RpcException({
-  //        status: HttpStatus.NOT_FOUND,
-  //        message: 'Statistics not found for this equipment and period'
-  //      });
-  //    }
-
-  //    return stats;
-
-  //  } catch (error) {
-  //    if (error instanceof RpcException) {
-  //      throw error;
-  //    }
-  //    throw new RpcException({
-  //      status: HttpStatus.INTERNAL_SERVER_ERROR,
-  //      message: 'Internal server error'
-  //    });
-  //  }
-  //}
-
-  //async findAllEquipmentStats(period: Period) {
-  //  try {
-  //    const stats = await this.equipmentStatistics.findMany({
-  //      where: { period },
-  //      include: {
-  //        equipment: true,
-  //        genderStats: true
-  //      },
-  //      orderBy: {
-  //        popularityScore: 'desc'
-  //      }
-  //    });
-
-  //    return stats;
-
-  //  } catch (error) {
-  //    throw new RpcException({
-  //      status: HttpStatus.INTERNAL_SERVER_ERROR,
-  //      message: 'Internal server error'
-  //    });
-  //  }
-  //}
-
-  //async updateEquipmentStats(equipmentId: number, period: Period, updateStatsDto: EquipmentStatisticsDto) {
-  //  try {
-  //    await this.findStatsByEquipmentId(equipmentId, period);
-
-  //    const updatedStats = await this.equipmentStatistics.update({
-  //      where: {
-  //        equipmentId_period: {
-  //          equipmentId,
-  //          period
-  //        }
-  //      },
-  //      data: {
-  //        date: updateStatsDto.date,
-  //        totalUses: updateStatsDto.totalUses,
-  //        popularityScore: updateStatsDto.popularityScore,
-  //        genderStats: {
-  //          deleteMany: {},
-  //          create: updateStatsDto.genderStats.map(stat => ({
-  //            gender: stat.gender,
-  //            useCount: stat.useCount
-  //          }))
-  //        }
-  //      },
-  //      include: {
-  //        equipment: true,
-  //        genderStats: true
-  //      }
-  //    });
-
-  //    const { createdAt, updatedAt, ...statsData } = updatedStats;
-  //    return statsData;
-
-  //  } catch (error) {
-  //    if (error instanceof RpcException) {
-  //      throw error;
-  //    }
-  //    throw new RpcException({
-  //      status: HttpStatus.INTERNAL_SERVER_ERROR,
-  //      message: 'Internal server error'
-  //    });
-  //  }
-  //}
-
-  //async deleteEquipmentStats(equipmentId: number, period: Period) {
-  //  try {
-  //    await this.findStatsByEquipmentId(equipmentId, period);
-
-  //    await this.equipmentStatistics.delete({
-  //      where: {
-  //        equipmentId_period: {
-  //          equipmentId,
-  //          period
-  //        }
-  //      }
-  //    });
+  //    // Calcular popularityScore (ejemplo: basado en el promedio de usos diarios)
+  //    const daysInPeriod = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+  //    const popularityScore = totalUses / daysInPeriod;
 
   //    return {
-  //      message: 'Equipment statistics deleted successfully'
-  //    };
-
-  //  } catch (error) {
-  //    if (error instanceof RpcException) {
-  //      throw error;
-  //    }
-  //    throw new RpcException({
-  //      status: HttpStatus.INTERNAL_SERVER_ERROR,
-  //      message: 'Internal server error'
-  //    });
-  //  }
-  //}
-
-  //async getTopEquipmentsByPopularity(period: Period, limit: number = 10) {
-  //  try {
-  //    const topEquipments = await this.equipmentStatistics.findMany({
-  //      where: { period },
-  //      orderBy: {
-  //        popularityScore: 'desc'
-  //      },
-  //      take: limit,
-  //      include: {
-  //        equipment: true,
-  //        genderStats: true
-  //      }
-  //    });
-
-  //    return topEquipments;
-
-  //  } catch (error) {
-  //    throw new RpcException({
-  //      status: HttpStatus.INTERNAL_SERVER_ERROR,
-  //      message: 'Internal server error'
-  //    });
-  //  }
-  //}
-
-  //async getGenderDistributionByEquipment(equipmentId: number, period: Period) {
-  //  try {
-  //    const stats = await this.findStatsByEquipmentId(equipmentId, period);
-      
-  //    const totalUses = stats.genderStats.reduce((acc, stat) => acc + stat.useCount, 0);
-      
-  //    const distribution = stats.genderStats.map(stat => ({
-  //      gender: stat.gender,
-  //      useCount: stat.useCount,
-  //      percentage: (stat.useCount / totalUses) * 100
-  //    }));
-
-  //    return {
-  //      equipmentId,
   //      period,
-  //      distribution
+  //      date,
+  //      equipmentId,
+  //      totalUses,
+  //      popularityScore,
+  //      genderStats
   //    };
-
   //  } catch (error) {
-  //    if (error instanceof RpcException) {
-  //      throw error;
-  //    }
-  //    throw new RpcException({
-  //      status: HttpStatus.INTERNAL_SERVER_ERROR,
-  //      message: 'Internal server error'
-  //    });
+  //    this.handleError(
+  //      error,
+  //      'Error calculating equipment statistics',
+  //      HttpStatus.INTERNAL_SERVER_ERROR
+  //    );
   //  }
   //}
 
+  //private async calculateGenderStats(
+  //  equipmentId: number, 
+  //  startDate: Date, 
+  //  endDate: Date
+  //): Promise<{ gender: Gender; useCount: number }[]> {
+  //  // Realizamos la agrupación por género en una única consulta
+  //  const genderStats = await this.rating.groupBy({
+  //    by: ['user.gender'], // Agrupamos por el campo `user.gender`
+  //    _count: {
+  //      id: true, // Contamos las filas agrupadas
+  //    },
+  //    where: {
+  //      targetId: equipmentId.toString(),
+  //      targetType: 'EQUIPMENT',
+  //      user: {
+  //        createdAt: {
+  //          gte: startDate,
+  //          lte: endDate,
+  //        },
+  //      },
+  //    },
+  //  });
+  
+  //  // Retornamos los datos con el formato requerido
+  //  return genderStats.map(stat => ({
+  //    gender: stat['user.gender'] as Gender,
+  //    useCount: stat._count.id,
+  //  }));
+  //}
+  
+  //async getEquipmentTrends(equipmentId: number, period: Period, numberOfPeriods: number = 12) {
+  //  try {
+  //    const trends = [];
+  //    const currentDate = new Date();
+
+  //    for (let i = 0; i < numberOfPeriods; i++) {
+  //      const date = new Date(currentDate);
+        
+  //      switch (period) {
+  //        case Period.DAILY:
+  //          date.setDate(date.getDate() - i);
+  //          break;
+  //        case Period.WEEKLY:
+  //          date.setDate(date.getDate() - (i * 7));
+  //          break;
+  //        case Period.MONTHLY:
+  //          date.setMonth(date.getMonth() - i);
+  //          break;
+  //        case Period.YEARLY:
+  //          date.setFullYear(date.getFullYear() - i);
+  //          break;
+  //      }
+
+  //      const stats = await this.calculateEquipmentStatistics(equipmentId, period, date);
+  //      trends.push(stats);
+  //    }
+
+  //    return trends.reverse();
+  //  } catch (error) {
+  //    this.handleError(
+  //      error,
+  //      'Error calculating equipment trends',
+  //      HttpStatus.INTERNAL_SERVER_ERROR
+  //    );
+  //  }
+  //}
+
+  //async compareEquipmentPopularity(equipmentIds: number[], period: Period, date: Date) {
+  //  try {
+  //    const comparisons = await Promise.all(
+  //      equipmentIds.map(id => this.calculateEquipmentStatistics(id, period, date))
+  //    );
+
+  //    return comparisons.sort((a, b) => b.popularityScore - a.popularityScore);
+  //  } catch (error) {
+  //    this.handleError(
+  //      error,
+  //      'Error comparing equipment popularity',
+  //      HttpStatus.INTERNAL_SERVER_ERROR
+  //    );
+  //  }
+  //}
+
+  //async getMostPopularEquipment(limit: number = 10, period: Period = Period.MONTHLY) {
+  //  try {
+  //    const currentDate = new Date();
+  //    const { startDate, endDate } = this.getDateRangeByPeriod(currentDate, period);
+
+  //    // Esta implementación dependerá de tu estructura de datos real
+  //    const popularEquipment = await this.rating.groupBy({
+  //      by: ['targetId'],
+  //      where: {
+  //        targetType: 'EQUIPMENT',
+  //        createdAt: {
+  //          gte: startDate,
+  //          lte: endDate
+  //        }
+  //      },
+  //      _count: {
+  //        targetId: true
+  //      },
+  //      orderBy: {
+  //        _count: {
+  //          targetId: 'desc'
+  //        }
+  //      },
+  //      take: limit
+  //    });
+
+  //    return popularEquipment.map(item => ({
+  //      equipmentId: parseInt(item.targetId),
+  //      useCount: item._count.targetId
+  //    }));
+  //  } catch (error) {
+  //    this.handleError(
+  //      error,
+  //      'Error getting most popular equipment',
+  //      HttpStatus.INTERNAL_SERVER_ERROR
+  //    );
+  //  }
+  //}
 }

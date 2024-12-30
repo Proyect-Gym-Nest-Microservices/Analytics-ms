@@ -24,7 +24,7 @@ export class UserStatisticsService extends PrismaClient implements OnModuleInit 
   async generateUserStatistics(period: Period, date: Date) {
     try {
       // Obtener fecha inicio y fin según el período
-      const { startDate, endDate } = this.getDateRange(period, date);
+      const { startDate, endDate } = this.getDateRangeByPerdiod(period, date);
 
       // Verificar si ya existen estadísticas para este período
       const existingStats = await this.userStatistics.findFirst({
@@ -128,7 +128,7 @@ export class UserStatisticsService extends PrismaClient implements OnModuleInit 
 
   async getStatistics(period: Period, date: Date) {
     try {
-      const { startDate, endDate } = this.getDateRange(period, date);
+      const { startDate, endDate } = this.getDateRangeByPerdiod(period, date);
 
       const statistics = await this.userStatistics.findFirst({
         where: {
@@ -244,7 +244,7 @@ export class UserStatisticsService extends PrismaClient implements OnModuleInit 
 
 
 
-  private getDateRange(period: Period, date: Date): { startDate: Date, endDate: Date } {
+  private getDateRangeByPerdiod(period: Period, date: Date): { startDate: Date, endDate: Date } {
     const startDate = new Date(date);
     const endDate = new Date(date);
 
