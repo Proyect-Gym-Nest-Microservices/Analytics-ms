@@ -5,6 +5,7 @@ import { Period } from "src/common/enums/analytics.enum";
 import { NATS_SERVICE } from "src/config";
 import { firstValueFrom } from "rxjs";
 import { TargetType } from "src/common/enums/target-type.enum";
+import { PaginationDto } from "src/common/dto/pagination.dto";
 
 @Injectable()
 export class ExerciseStatisticsService extends PrismaClient implements OnModuleInit {
@@ -24,7 +25,6 @@ export class ExerciseStatisticsService extends PrismaClient implements OnModuleI
 
   async generateExerciseStatistics(exerciseId: number, period: Period, date: Date) {
     try {
-      // Obtener fecha inicio y fin según el período
       const { startDate, endDate } = this.getDateRangeByPeriod(date,period);
 
       const [existingStats, genderStats, exercise] = await Promise.all([
@@ -154,6 +154,41 @@ export class ExerciseStatisticsService extends PrismaClient implements OnModuleI
       this.handleError(
         error,
         `Error retrieving exercise statistics with ID ${statisticsId}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async findAllExerciseStats(paginationDto: PaginationDto) {
+    const { limit=10, page=1 } = paginationDto
+    try {
+      const totalStats = await this.exerciseStatistics.count();
+      const lastPage = Math.ceil(totalStats / limit)
+      return {
+        data:await this.exerciseStatistics.findMany({
+          skip: (page - 1) * limit,
+          take:limit,
+          include: {
+            genderStats: true,
+            categoryStats: true,
+            difficultyStats: true
+          },
+          orderBy: {
+            date: 'desc'
+          }
+        }),
+        meta: {
+          totalStats,
+          page,
+          lastPage
+        }
+      };
+      
+    } catch (error) {
+      console.log(error)
+      this.handleError(
+        error,
+        'Error retrieving all exercise statistics',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

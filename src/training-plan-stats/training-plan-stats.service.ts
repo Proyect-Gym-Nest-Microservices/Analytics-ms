@@ -5,6 +5,7 @@ import { Period } from "src/common/enums/analytics.enum";
 import { NATS_SERVICE } from "src/config";
 import { firstValueFrom } from "rxjs";
 import { TargetType } from "src/common/enums/target-type.enum";
+import { PaginationDto } from "src/common/dto/pagination.dto";
 
 @Injectable()
 export class TrainingPlanStatsService extends PrismaClient implements OnModuleInit {
@@ -111,6 +112,41 @@ export class TrainingPlanStatsService extends PrismaClient implements OnModuleIn
       });
     }
   }
+
+
+    async findAllTrainingPlanStats(paginationDto: PaginationDto) {
+      const { limit=10, page=1 } = paginationDto
+      try {
+        const totalStats = await this.trainingPlanStatistics.count();
+        const lastPage = Math.ceil(totalStats / limit)
+        return {
+          data:await this.trainingPlanStatistics.findMany({
+            skip: (page - 1) * limit,
+            take:limit,
+            include: {
+              genderStats: true,
+              difficultyStats: true
+            },
+            orderBy: {
+              date: 'desc'
+            }
+          }),
+          meta: {
+            totalStats,
+            page,
+            lastPage
+          }
+        };
+        
+      } catch (error) {
+        console.log(error)
+        this.handleError(
+          error,
+          'Error retrieving all exercise statistics',
+          HttpStatus.INTERNAL_SERVER_ERROR
+        );
+      }
+    }
 
   async findTrainingPlanStatsById(statisticsId: string) {
     try {

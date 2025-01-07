@@ -4,6 +4,7 @@ import { TrainingPlanStatsService } from './training-plan-stats.service';
 import { DatePeriodDto } from 'src/common/dto/date-period.dto';
 import { MongoIdDto } from 'src/common/dto/mongo-id.dto';
 import { TrainingPlanStatisticsDto } from './dto/trainingplan-statistics.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Controller()
 export class TrainingPlanStatsController {
@@ -29,6 +30,11 @@ export class TrainingPlanStatsController {
       new Date(datePeriodDto.date)
     );
   }
+
+    @MessagePattern('find.all.training.stats')
+    findAllExerciseStats(@Payload() paginationDto: PaginationDto) {
+      return this.trainingPlanStatsService.findAllTrainingPlanStats(paginationDto);
+    }
 
   @MessagePattern('find.training.plan.statistic.by.id')
   findTrainingPlanStatsById(

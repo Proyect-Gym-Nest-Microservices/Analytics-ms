@@ -3,6 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { UserStatisticsService } from './user-statistics.service';
 import { DatePeriodDto } from 'src/common/dto/date-period.dto';
 import { MongoIdDto } from 'src/common/dto/mongo-id.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Controller()
 export class UserStatisticsController {
@@ -27,6 +28,11 @@ export class UserStatisticsController {
       new Date(datePeriodDto.date)
     );
   }
+
+    @MessagePattern('find.all.user.stats')
+    findAllExerciseStats(@Payload() paginationDto: PaginationDto) {
+      return this.userStatisticsService.findAllUserStats(paginationDto);
+    }
 
   @MessagePattern('find.user.statistic.by.id')
   findUserStatsById(

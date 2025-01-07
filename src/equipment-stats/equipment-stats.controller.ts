@@ -4,6 +4,7 @@ import { EquipmentStatsService } from './equipment-stats.service';
 import { EquipmentStatisticsDto } from './dto/equipment.statistics.dto';
 import { DatePeriodDto } from 'src/common/dto/date-period.dto';
 import { MongoIdDto } from 'src/common/dto/mongo-id.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Controller()
 export class EquipmentStatsController {
@@ -25,6 +26,13 @@ export class EquipmentStatsController {
       new Date(datePeriodDto.date)
     );
   }
+
+  @MessagePattern('find.all.equipment.stats')
+  findAllExerciseStats(@Payload() paginationDto: PaginationDto) {
+    return this.equipmentStatsService.findAllEquipmentStats(paginationDto);
+  }
+
+
   @MessagePattern('find.equipment.statistic.by.id')
   findEquipmentStatsById(
     @Payload() statsIdDto:MongoIdDto

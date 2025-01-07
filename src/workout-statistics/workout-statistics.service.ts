@@ -5,6 +5,7 @@ import { Period } from "src/common/enums/analytics.enum";
 import { NATS_SERVICE } from "src/config";
 import { firstValueFrom } from "rxjs";
 import { TargetType } from "src/common/enums/target-type.enum";
+import { PaginationDto } from "src/common/dto/pagination.dto";
 
 @Injectable()
 export class WorkoutStatisticsService extends PrismaClient implements OnModuleInit {
@@ -39,13 +40,13 @@ export class WorkoutStatisticsService extends PrismaClient implements OnModuleIn
         this.calculateGenderStats(workoutId, TargetType.WORKOUT),
         this.findWorkoutById(workoutId)
       ]);
-      
-      const { totalRatings, level:difficulty, category, score } = workout;
+
+      const { totalRatings, level: difficulty, category, score } = workout;
       const genderStatsData = (genderStats?.length ? genderStats.map(stat => ({
         gender: stat.gender,
         useCount: stat.count
       })) : []);
-      
+
       if (existingStats) {
         const updatedStats = await this.workoutStatistics.update({
           where: { id: existingStats.id },
@@ -64,13 +65,13 @@ export class WorkoutStatisticsService extends PrismaClient implements OnModuleIn
             categoryStats: {
               deleteMany: {},
               createMany: {
-                data: { category, useCount:totalRatings }
+                data: { category, useCount: totalRatings }
               }
             },
             difficultyStats: {
               deleteMany: {},
               createMany: {
-                data: { difficulty, useCount:totalRatings }
+                data: { difficulty, useCount: totalRatings }
               }
             }
           },
@@ -100,12 +101,12 @@ export class WorkoutStatisticsService extends PrismaClient implements OnModuleIn
           }),
           categoryStats: {
             createMany: {
-              data: { category, useCount:totalRatings }
+              data: { category, useCount: totalRatings }
             }
           },
           difficultyStats: {
             createMany: {
-              data: { difficulty, useCount:totalRatings }
+              data: { difficulty, useCount: totalRatings }
             }
           }
         },
@@ -126,11 +127,46 @@ export class WorkoutStatisticsService extends PrismaClient implements OnModuleIn
     }
   }
 
+  async findAllWorkoutStats(paginationDto: PaginationDto) {
+    const { limit = 10, page = 1 } = paginationDto
+    try {
+      const totalStats = await this.workoutStatistics.count();
+      const lastPage = Math.ceil(totalStats / limit)
+      return {
+        data: await this.workoutStatistics.findMany({
+          skip: (page - 1) * limit,
+          take: limit,
+          include: {
+            genderStats: true,
+            categoryStats: true,
+            difficultyStats: true
+          },
+          orderBy: {
+            date: 'desc'
+          }
+        }),
+        meta: {
+          totalStats,
+          page,
+          lastPage
+        }
+      };
+
+    } catch (error) {
+      console.log(error)
+      this.handleError(
+        error,
+        'Error retrieving all exercise statistics',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
   async findWorkoutStatsById(statisticsId: string) {
     try {
       const statistic = await this.workoutStatistics.findUnique({
         where: { id: statisticsId },
-        include: { 
+        include: {
           genderStats: true,
           categoryStats: true,
           difficultyStats: true
@@ -262,7 +298,7 @@ export class WorkoutStatisticsService extends PrismaClient implements OnModuleIn
     return this.workoutStatistics.findMany({
       where: { date: { gte: startDate, lte: endDate } },
       orderBy: { totalUses: 'desc' },
-      include: { 
+      include: {
         genderStats: true,
       },
       take: WorkoutStatisticsService.TOP_ITEMS_LIMIT,
@@ -273,7 +309,7 @@ export class WorkoutStatisticsService extends PrismaClient implements OnModuleIn
     return this.workoutStatistics.findMany({
       where: { date: { gte: startDate, lte: endDate } },
       orderBy: { popularityScore: 'desc' },
-      include: { 
+      include: {
         genderStats: true,
       },
       take: WorkoutStatisticsService.TOP_ITEMS_LIMIT,
@@ -298,7 +334,7 @@ export class WorkoutStatisticsService extends PrismaClient implements OnModuleIn
         _sum: { useCount: 'desc' }
       }
     });
-    
+
     return categoryStats.map(stat => ({
       category: stat.category,
       useCount: stat._sum.useCount
@@ -321,9 +357,9 @@ export class WorkoutStatisticsService extends PrismaClient implements OnModuleIn
       },
       orderBy: {
         _sum: {
-          useCount: 'desc' 
+          useCount: 'desc'
         }
-      } 
+      }
     });
 
     return difficultyStats.map(stat => ({

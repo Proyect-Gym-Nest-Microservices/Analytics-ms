@@ -6,6 +6,7 @@ import { Period } from 'src/common/enums/analytics.enum';
 import { firstValueFrom } from 'rxjs';
 import { TargetType } from 'src/common/enums/target-type.enum';
 import { EquipmentStatisticsDto } from './dto/equipment.statistics.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class EquipmentStatsService extends PrismaClient implements OnModuleInit {
@@ -146,6 +147,39 @@ export class EquipmentStatsService extends PrismaClient implements OnModuleInit 
         error,
         'Error generating equipment statistics',
         HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async findAllEquipmentStats(paginationDto:PaginationDto) {
+    const { limit=10, page=1 } = paginationDto
+    try {
+      
+      const totalStats = await this.equipmentStatistics.count();
+      const lastPage = Math.ceil(totalStats / limit)
+      return {
+        data:await this.equipmentStatistics.findMany({
+          skip: (page - 1) * limit,
+          take:limit,
+          include: {
+            genderStats: true,
+          },
+          orderBy: {
+            date: 'desc'
+          }
+        }),
+        meta: {
+          totalStats,
+          page,
+          lastPage
+        }
+      };
+      
+    } catch (error) {
+      this.handleError(
+        error,
+        'Error retrieving all equipment statistics',
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }

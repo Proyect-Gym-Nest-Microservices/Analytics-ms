@@ -5,6 +5,7 @@ import { Period } from "src/common/enums/analytics.enum";
 import { NATS_SERVICE } from "src/config";
 import { AgeRange } from "./enums/user-stats.enum";
 import { firstValueFrom } from "rxjs";
+import { PaginationDto } from "src/common/dto/pagination.dto";
 
 @Injectable()
 export class UserStatisticsService extends PrismaClient implements OnModuleInit {
@@ -166,71 +167,103 @@ export class UserStatisticsService extends PrismaClient implements OnModuleInit 
     }
   }
 
-
-async findUserStatsById(statisticsId: string) {
-  try {
-    const statistic = await this.userStatistics.findUnique({
-      where: { id: statisticsId },
-      include: {
-        genderStats: true,
-        goalStats: true,
-        ageRangeStats: true
-      },
-    });
-
-    if (!statistic) {
-      throw new RpcException({
-        status: HttpStatus.NOT_FOUND,
-        message: `Statistics with ID ${statisticsId} not found.`,
-      });
-    }
-
-    return statistic;
-  } catch (error) {
-    this.handleError(
-      error,
-      `Error retrieving user statistics with ID ${statisticsId}`,
-      HttpStatus.INTERNAL_SERVER_ERROR
-    );
-  }
-}
-
-async deleteUserStatistics(statisticsId: string) {
-  try {
-    const existingStats = await this.findUserStatsById(statisticsId);
-
-    await this.userStatistics.update({
-      where: { id: existingStats.id },
-      data: {
-        genderStats: {
-          deleteMany: {}
-        },
-        goalStats: {
-          deleteMany: {}
-        },
-        ageRangeStats: {
-          deleteMany: {}
+  async findAllUserStats(paginationDto: PaginationDto) {
+    const { limit = 10, page = 1 } = paginationDto
+    try {
+      const totalStats = await this.userStatistics.count();
+      const lastPage = Math.ceil(totalStats / limit)
+      return {
+        data: await this.userStatistics.findMany({
+          skip: (page - 1) * limit,
+          take: limit,
+          include: {
+            genderStats: true,
+          },
+          orderBy: {
+            date: 'desc'
+          }
+        }),
+        meta: {
+          totalStats,
+          page,
+          lastPage
         }
-      }
-    });
+      };
 
-    const deletedStats = await this.userStatistics.delete({
-      where: { id: statisticsId },
-    });
-
-    this.logger.log(`Statistics with ID ${statisticsId} successfully deleted`);
-    return {
-      message: 'Statistics deleted successfully',
-      deletedStats
-    };
-  } catch (error) {
-    this.handleError(
-      error,
-      `Error deleting user statistics with ID ${statisticsId}`,
-      HttpStatus.INTERNAL_SERVER_ERROR
-    );
+    } catch (error) {
+      console.log(error)
+      this.handleError(
+        error,
+        'Error retrieving all exercise statistics',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
-}
+
+  async findUserStatsById(statisticsId: string) {
+    try {
+      const statistic = await this.userStatistics.findUnique({
+        where: { id: statisticsId },
+        include: {
+          genderStats: true,
+          goalStats: true,
+          ageRangeStats: true
+        },
+      });
+
+      if (!statistic) {
+        throw new RpcException({
+          status: HttpStatus.NOT_FOUND,
+          message: `Statistics with ID ${statisticsId} not found.`,
+        });
+      }
+
+      return statistic;
+    } catch (error) {
+      this.handleError(
+        error,
+        `Error retrieving user statistics with ID ${statisticsId}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async deleteUserStatistics(statisticsId: string) {
+    try {
+      const existingStats = await this.findUserStatsById(statisticsId);
+
+      await this.userStatistics.update({
+        where: { id: existingStats.id },
+        data: {
+          genderStats: {
+            deleteMany: {}
+          },
+          goalStats: {
+            deleteMany: {}
+          },
+          ageRangeStats: {
+            deleteMany: {}
+          }
+        }
+      });
+
+      const deletedStats = await this.userStatistics.delete({
+        where: { id: statisticsId },
+      });
+
+      this.logger.log(`Statistics with ID ${statisticsId} successfully deleted`);
+      return {
+        message: 'Statistics deleted successfully',
+        deletedStats
+      };
+    } catch (error) {
+      this.handleError(
+        error,
+        `Error deleting user statistics with ID ${statisticsId}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
 
   private async calculateUserStatistics(startDate: Date, endDate: Date) {
     try {

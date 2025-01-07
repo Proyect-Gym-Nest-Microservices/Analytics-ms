@@ -4,6 +4,7 @@ import { ExerciseStatisticsService } from './exercise-statistics.service';
 import { DatePeriodDto } from 'src/common/dto/date-period.dto';
 import { MongoIdDto } from 'src/common/dto/mongo-id.dto';
 import { ExerciseStatisticsDto } from './dto/exercise-statistics-dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Controller()
 export class ExerciseStatisticsController {
@@ -35,6 +36,11 @@ export class ExerciseStatisticsController {
     @Payload() statsIdDto: MongoIdDto
   ) {
     return this.exerciseStatsService.findExerciseStatsById(statsIdDto.id);
+  }
+
+  @MessagePattern('find.all.exercise.stats')
+  findAllExerciseStats(@Payload() paginationDto: PaginationDto) {
+    return this.exerciseStatsService.findAllExerciseStats(paginationDto);
   }
 
   @MessagePattern('delete.exercise.statistic.by.id')
