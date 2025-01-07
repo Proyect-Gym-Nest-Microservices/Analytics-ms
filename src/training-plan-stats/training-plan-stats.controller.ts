@@ -1,34 +1,46 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { TrainingPlanStatsService } from './training-plan-stats.service';
-import { UpdateTrainingPlanStatDto } from './dto/update-training-plan-stat.dto';
+import { DatePeriodDto } from 'src/common/dto/date-period.dto';
+import { MongoIdDto } from 'src/common/dto/mongo-id.dto';
+import { TrainingPlanStatisticsDto } from './dto/trainingplan-statistics.dto';
 
 @Controller()
 export class TrainingPlanStatsController {
   constructor(private readonly trainingPlanStatsService: TrainingPlanStatsService) {}
 
-  //@MessagePattern('createTrainingPlanStat')
-  //create(@Payload() createTrainingPlanStatDto: CreateTrainingPlanStatDto) {
-  //  return this.trainingPlanStatsService.create(createTrainingPlanStatDto);
-  //}
+  @MessagePattern('generate.training.plan.statistics')
+  generateTrainingPlanStatistics(
+    @Payload() trainingPlanStatsDto: TrainingPlanStatisticsDto
+  ) {
+    return this.trainingPlanStatsService.generateTrainingPlanStatistics(
+      trainingPlanStatsDto.trainingPlanId,
+      trainingPlanStatsDto.period,
+      new Date(trainingPlanStatsDto.date)
+    );
+  }
 
-  //@MessagePattern('findAllTrainingPlanStats')
-  //findAll() {
-  //  return this.trainingPlanStatsService.findAll();
-  //}
+  @MessagePattern('get.training.plan.statistics')
+  getTrainingPlanStatistics(
+    @Payload() datePeriodDto: DatePeriodDto
+  ) {
+    return this.trainingPlanStatsService.getTrainingPlanStatistics(
+      datePeriodDto.period,
+      new Date(datePeriodDto.date)
+    );
+  }
 
-  //@MessagePattern('findOneTrainingPlanStat')
-  //findOne(@Payload() id: number) {
-  //  return this.trainingPlanStatsService.findOne(id);
-  //}
+  @MessagePattern('find.training.plan.statistic.by.id')
+  findTrainingPlanStatsById(
+    @Payload() statsIdDto: MongoIdDto
+  ) {
+    return this.trainingPlanStatsService.findTrainingPlanStatsById(statsIdDto.id);
+  }
 
-  //@MessagePattern('updateTrainingPlanStat')
-  //update(@Payload() updateTrainingPlanStatDto: UpdateTrainingPlanStatDto) {
-  //  return this.trainingPlanStatsService.update(updateTrainingPlanStatDto.id, updateTrainingPlanStatDto);
-  //}
-
-  //@MessagePattern('removeTrainingPlanStat')
-  //remove(@Payload() id: number) {
-  //  return this.trainingPlanStatsService.remove(id);
-  //}
+  @MessagePattern('delete.training.plan.statistic.by.id')
+  deleteTrainingPlanStatistics(
+    @Payload() statsIdDto: MongoIdDto
+  ) {
+    return this.trainingPlanStatsService.deleteTrainingPlanStatistics(statsIdDto.id);
+  }
 }

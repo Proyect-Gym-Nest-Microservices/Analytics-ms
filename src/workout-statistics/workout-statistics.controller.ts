@@ -1,34 +1,46 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { WorkoutStatisticsService } from './workout-statistics.service';
-import { UpdateWorkoutStatisticDto } from './dto/update-workout-statistic.dto';
+import { DatePeriodDto } from 'src/common/dto/date-period.dto';
+import { MongoIdDto } from 'src/common/dto/mongo-id.dto';
+import { WorkoutStatisticsDto } from './dto/workout-statistics.dto';
 
 @Controller()
 export class WorkoutStatisticsController {
-  constructor(private readonly workoutStatisticsService: WorkoutStatisticsService) {}
+  constructor(private readonly workoutStatsService: WorkoutStatisticsService) {}
 
-  //@MessagePattern('createWorkoutStatistic')
-  //create(@Payload() createWorkoutStatisticDto: CreateWorkoutStatisticDto) {
-  //  return this.workoutStatisticsService.create(createWorkoutStatisticDto);
-  //}
+  @MessagePattern('generate.workout.statistics')
+  generateWorkoutStatistics(
+    @Payload() workoutStatsDto: WorkoutStatisticsDto
+  ) {
+    return this.workoutStatsService.generateWorkoutStatistics(
+      workoutStatsDto.workoutId,
+      workoutStatsDto.period,
+      new Date(workoutStatsDto.date)
+    );
+  }
 
-  //@MessagePattern('findAllWorkoutStatistics')
-  //findAll() {
-  //  return this.workoutStatisticsService.findAll();
-  //}
+  @MessagePattern('get.workout.statistics')
+  getWorkoutStatistics(
+    @Payload() datePeriodDto: DatePeriodDto
+  ) {
+    return this.workoutStatsService.getWorkoutStatistics(
+      datePeriodDto.period,
+      new Date(datePeriodDto.date)
+    );
+  }
 
-  //@MessagePattern('findOneWorkoutStatistic')
-  //findOne(@Payload() id: number) {
-  //  return this.workoutStatisticsService.findOne(id);
-  //}
+  @MessagePattern('find.workout.statistic.by.id')
+  findWorkoutStatsById(
+    @Payload() statsIdDto: MongoIdDto
+  ) {
+    return this.workoutStatsService.findWorkoutStatsById(statsIdDto.id);
+  }
 
-  //@MessagePattern('updateWorkoutStatistic')
-  //update(@Payload() updateWorkoutStatisticDto: UpdateWorkoutStatisticDto) {
-  //  return this.workoutStatisticsService.update(updateWorkoutStatisticDto.id, updateWorkoutStatisticDto);
-  //}
-
-  //@MessagePattern('removeWorkoutStatistic')
-  //remove(@Payload() id: number) {
-  //  return this.workoutStatisticsService.remove(id);
-  //}
+  @MessagePattern('delete.workout.statistic.by.id')
+  deleteWorkoutStatistics(
+    @Payload() statsIdDto: MongoIdDto
+  ) {
+    return this.workoutStatsService.deleteWorkoutStatistics(statsIdDto.id);
+  }
 }

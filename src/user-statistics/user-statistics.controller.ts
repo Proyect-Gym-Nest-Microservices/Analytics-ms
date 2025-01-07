@@ -1,7 +1,8 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { UserStatisticsService } from './user-statistics.service';
-import { Period } from 'src/common/enums/analytics.enum';
+import { DatePeriodDto } from 'src/common/dto/date-period.dto';
+import { MongoIdDto } from 'src/common/dto/mongo-id.dto';
 
 @Controller()
 export class UserStatisticsController {
@@ -9,21 +10,35 @@ export class UserStatisticsController {
 
   @MessagePattern('generate.user.statistics')
   generateUserStatistics(
-    @Payload() payload: { period: Period; date: Date }
+    @Payload()datePeriodDto: DatePeriodDto
   ) {
     return this.userStatisticsService.generateUserStatistics(
-      payload.period,
-      new Date(payload.date)
+      datePeriodDto.period,
+      new Date(datePeriodDto.date)
     );
   }
 
-  @MessagePattern('get.statistics')
-  getStatistics(
-    @Payload() payload: { period: Period; date: Date }
+  @MessagePattern('get.user.statistics')
+  getUserStatistics(
+    @Payload()datePeriodDto: DatePeriodDto
   ) {
-    return this.userStatisticsService.getStatistics(
-      payload.period,
-      new Date(payload.date)
+    return this.userStatisticsService.getUserStatistics(
+      datePeriodDto.period,
+      new Date(datePeriodDto.date)
     );
+  }
+
+  @MessagePattern('find.user.statistic.by.id')
+  findUserStatsById(
+    @Payload() statsIdDto: MongoIdDto
+  ) {
+    return this.userStatisticsService.findUserStatsById(statsIdDto.id);
+  }
+
+  @MessagePattern('delete.user.statistic.by.id')
+  deleteUserStatistics(
+    @Payload() statsIdDto: MongoIdDto
+  ) {
+    return this.userStatisticsService.deleteUserStatistics(statsIdDto.id);
   }
 }

@@ -28,7 +28,7 @@ model UserStatistics {
 model UserGenderStats {
   id         String         @id @default(auto()) @map("_id") @db.ObjectId
   userStatId String         @db.ObjectId
-  userStat   UserStatistics @relation(fields: [userStatId], references: [id],onDelete:Cascade)
+  userStat   UserStatistics @relation(fields: [userStatId], references: [id], onDelete: Cascade)
   gender     Gender
   count      Int            @default(0)
 
@@ -39,7 +39,7 @@ model UserGenderStats {
 model UserGoalStats {
   id         String         @id @default(auto()) @map("_id") @db.ObjectId
   userStatId String         @db.ObjectId
-  userStat   UserStatistics @relation(fields: [userStatId], references: [id],onDelete:Cascade)
+  userStat   UserStatistics @relation(fields: [userStatId], references: [id], onDelete: Cascade)
   goal       Goal
   count      Int            @default(0)
 
@@ -50,7 +50,7 @@ model UserGoalStats {
 model UserAgeRangeStats {
   id         String         @id @default(auto()) @map("_id") @db.ObjectId
   userStatId String         @db.ObjectId
-  userStat   UserStatistics @relation(fields: [userStatId], references: [id],onDelete:Cascade)
+  userStat   UserStatistics @relation(fields: [userStatId], references: [id], onDelete: Cascade)
   ageRange   AgeRange
   count      Int            @default(0)
 
@@ -69,7 +69,7 @@ model ExerciseStatistics {
   date            DateTime                  @default(now())
   genderStats     ExerciseGenderStats[]
   categoryStats   ExerciseCategoryStats[]
-  dificultyStats  ExerciseDifficultyStats[]
+  difficultyStats  ExerciseDifficultyStats[]
 
   @@unique([exerciseId, period, date])
   @@index([exerciseId])
@@ -80,7 +80,7 @@ model ExerciseStatistics {
 model ExerciseGenderStats {
   id             String             @id @default(auto()) @map("_id") @db.ObjectId
   exerciseStatId String             @db.ObjectId
-  exerciseStat   ExerciseStatistics @relation(fields: [exerciseStatId], references: [id],onDelete:Cascade)
+  exerciseStat   ExerciseStatistics @relation(fields: [exerciseStatId], references: [id], onDelete: Cascade)
   gender         Gender
   useCount       Int                @default(0)
 
@@ -91,7 +91,7 @@ model ExerciseGenderStats {
 model ExerciseCategoryStats {
   id             String             @id @default(auto()) @map("_id") @db.ObjectId
   exerciseStatId String             @db.ObjectId
-  exerciseStat   ExerciseStatistics @relation(fields: [exerciseStatId], references: [id],onDelete:Cascade)
+  exerciseStat   ExerciseStatistics @relation(fields: [exerciseStatId], references: [id], onDelete: Cascade)
   category       Category
   useCount       Int                @default(0)
 
@@ -102,7 +102,7 @@ model ExerciseCategoryStats {
 model ExerciseDifficultyStats {
   id             String             @id @default(auto()) @map("_id") @db.ObjectId
   exerciseStatId String             @db.ObjectId
-  exerciseStat   ExerciseStatistics @relation(fields: [exerciseStatId], references: [id],onDelete:Cascade)
+  exerciseStat   ExerciseStatistics @relation(fields: [exerciseStatId], references: [id], onDelete: Cascade)
   difficulty     Difficulty
   useCount       Int                @default(0)
 
@@ -116,12 +116,12 @@ model WorkoutStatistics {
   id              String                   @id @default(auto()) @map("_id") @db.ObjectId
   workoutId       Int // Referencia al ID del workout
   popularityScore Float // Puntuación basada en completions y ratings
+  totalUses       Int 
   period          Period
   date            DateTime                 @default(now())
   genderStats     WorkoutGenderStats[]
   difficultyStats WorkoutDifficultyStats[] // Estadísticas por nivel de dificultad
   categoryStats   WorkoutCategoryStats[] // Estadísticas por categoría
-  completionStats WorkoutCompletionStats[]
 
   @@unique([workoutId, period, date])
   @@index([workoutId])
@@ -132,9 +132,9 @@ model WorkoutStatistics {
 model WorkoutGenderStats {
   id               String            @id @default(auto()) @map("_id") @db.ObjectId
   workoutStatId    String            @db.ObjectId
-  workoutStat      WorkoutStatistics @relation(fields: [workoutStatId], references: [id],onDelete:Cascade)
+  workoutStat      WorkoutStatistics @relation(fields: [workoutStatId], references: [id], onDelete: Cascade)
   gender           Gender
-  totalCompletions Int               @default(0) // Número de veces completado por género
+  useCount Int               @default(0) // Número de veces completado por género
 
   @@unique([workoutStatId, gender])
   @@index([workoutStatId])
@@ -143,9 +143,9 @@ model WorkoutGenderStats {
 model WorkoutDifficultyStats {
   id               String            @id @default(auto()) @map("_id") @db.ObjectId
   workoutStatId    String            @db.ObjectId
-  workoutStat      WorkoutStatistics @relation(fields: [workoutStatId], references: [id],onDelete:Cascade)
+  workoutStat      WorkoutStatistics @relation(fields: [workoutStatId], references: [id], onDelete: Cascade)
   difficulty       Difficulty
-  totalCompletions Int               @default(0) // Número de veces completado por nivel de dificultad
+  useCount Int               @default(0) // Número de veces completado por nivel de dificultad
 
   @@unique([workoutStatId, difficulty])
   @@index([workoutStatId])
@@ -154,60 +154,56 @@ model WorkoutDifficultyStats {
 model WorkoutCategoryStats {
   id               String            @id @default(auto()) @map("_id") @db.ObjectId
   workoutStatId    String            @db.ObjectId
-  workoutStat      WorkoutStatistics @relation(fields: [workoutStatId], references: [id],onDelete:Cascade)
+  workoutStat      WorkoutStatistics @relation(fields: [workoutStatId], references: [id], onDelete: Cascade)
   category         Category
-  totalCompletions Int               @default(0) // Número de veces completado por categoría
+  useCount Int               @default(0) // Número de veces completado por categoría
 
   @@unique([workoutStatId, category])
   @@index([workoutStatId])
 }
 
-model WorkoutCompletionStats {
-  id               String            @id @default(auto()) @map("_id") @db.ObjectId
-  workoutStatId    String            @db.ObjectId
-  workoutStat      WorkoutStatistics @relation(fields: [workoutStatId], references: [id], onDelete:Cascade)
-  completionStatus CompletionStatus
-  count            Int               @default(0)
-
-  @@unique([workoutStatId, completionStatus])
-  @@index([workoutStatId])
-}
 
 //- Estadisticas para los Equipos
 model EquipmentStatistics {
   id              String                 @id @default(auto()) @map("_id") @db.ObjectId
-  equipmentId     Int                 
+  equipmentId     Int
   totalUses       Int                    @default(0)
-  popularityScore Float 
+  popularityScore Float
   period          Period
   date            DateTime               @default(now())
   genderStats     EquipmentGenderStats[]
 
-  @@unique([period, date])
+  //@@unique([period, date])
+
+  @@unique([period, date, equipmentId], name: "equipment_period_date")
+  @@index([equipmentId])
+  @@index([date])
+  @@index([period])
+  @@map("equipment_statistics")
 }
 
 model EquipmentGenderStats {
   id                    String              @id @default(auto()) @map("_id") @db.ObjectId
   equipmentStatisticsId String              @db.ObjectId
-  equipmentStat         EquipmentStatistics @relation(fields: [equipmentStatisticsId], references: [id], onDelete:Cascade)
+  equipmentStat         EquipmentStatistics @relation(fields: [equipmentStatisticsId], references: [id], onDelete: Cascade)
   gender                Gender
   useCount              Int                 @default(0)
 
   @@unique([equipmentStatisticsId, gender])
+  @@index([equipmentStatisticsId])
+  @@map("equipment_gender_stats")
 }
 
 //- Estadisiticas para el Plan de entrenamiento
 model TrainingPlanStatistics {
-  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
   trainingPlanId   Int
-  totalEnrollments Int              @default(0)
-  totalCompletions Int              @default(0)
+  totalCompletions Int      @default(0)
   period           Period
-  date             DateTime         @default(now())
+  date             DateTime @default(now())
 
   genderStats     TrainingPlanGenderStats[]
   difficultyStats TrainingPlanDifficultyStats[]
-  completionStats TrainingPlanCompletionStats[]
 
   @@unique([trainingPlanId, period, date])
   @@index([trainingPlanId])
@@ -220,7 +216,6 @@ model TrainingPlanGenderStats {
   trainingPlanStatId String                 @db.ObjectId
   trainingPlanStat   TrainingPlanStatistics @relation(fields: [trainingPlanStatId], references: [id], onDelete: Cascade)
   gender             Gender
-  enrollmentCount    Int                    @default(0)
   completionCount    Int                    @default(0)
 
   @@unique([trainingPlanStatId, gender])
@@ -232,23 +227,13 @@ model TrainingPlanDifficultyStats {
   trainingPlanStatId String                 @db.ObjectId
   trainingPlanStat   TrainingPlanStatistics @relation(fields: [trainingPlanStatId], references: [id], onDelete: Cascade)
   difficulty         Difficulty
-  enrollmentCount    Int                    @default(0)
   completionCount    Int                    @default(0)
 
   @@unique([trainingPlanStatId, difficulty])
   @@index([trainingPlanStatId])
 }
 
-model TrainingPlanCompletionStats {
-  id                 String                 @id @default(auto()) @map("_id") @db.ObjectId
-  trainingPlanStatId String                 @db.ObjectId
-  trainingPlanStat   TrainingPlanStatistics @relation(fields: [trainingPlanStatId], references: [id], onDelete: Cascade)
-  completionStatus   CompletionStatus
-  count              Int                    @default(0)
 
-  @@unique([trainingPlanStatId, completionStatus])
-  @@index([trainingPlanStatId])
-}
 
 enum Period {
   DAILY
@@ -266,11 +251,6 @@ enum AgeRange {
   AGE_55_PLUS
 }
 
-enum CompletionStatus {
-  COMPLETED
-  ABANDONED
-  IN_PROGRESS
-}
 
 enum Gender {
   MALE
@@ -290,7 +270,6 @@ enum Difficulty {
   INTERMEDIATE
   ADVANCED
 }
-
 
 enum Category {
   CARDIO

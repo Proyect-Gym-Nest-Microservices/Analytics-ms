@@ -1,5 +1,0 @@
-export * from './trainingplan-statistics.dto'
-export * from './trainingplan.gender.stats.dto'
-export * from './update-training-plan-stat.dto'
-export * from './training-plan-completion-stats.dto'
-export * from './training-plan-difficulty-stats.dto'

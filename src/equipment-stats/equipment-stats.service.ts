@@ -1,19 +1,21 @@
 import { HttpStatus, Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { UpdateEquipmentStatDto } from './dto/update-equipment-stat.dto';
 import { NATS_SERVICE } from 'src/config';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { PrismaClient } from '@prisma/client';
 import { Period } from 'src/common/enums/analytics.enum';
 import { firstValueFrom } from 'rxjs';
-import { EquipmentStatisticsDto } from './dto';
+import { TargetType } from 'src/common/enums/target-type.enum';
+import { EquipmentStatisticsDto } from './dto/equipment.statistics.dto';
 
 @Injectable()
 export class EquipmentStatsService extends PrismaClient implements OnModuleInit {
-  private readonly logger = new Logger('Equipment-Statistics-Service');
+  private readonly logger = new Logger(EquipmentStatsService.name);
+  private static readonly TOP_ITEMS_LIMIT = 5;
+
 
   constructor(
     @Inject(NATS_SERVICE) private readonly client: ClientProxy,
-  ) { 
+  ) {
     super()
   }
 
@@ -21,7 +23,7 @@ export class EquipmentStatsService extends PrismaClient implements OnModuleInit 
     await this.$connect();
     this.logger.log('DataBase connected');
   }
-  
+
   private handleError(error: any, defaultMessage: string, httpStatus: HttpStatus) {
     if (error instanceof RpcException) {
       throw error;
@@ -35,180 +37,252 @@ export class EquipmentStatsService extends PrismaClient implements OnModuleInit 
   private getDateRangeByPeriod(date: Date, period: Period): { startDate: Date; endDate: Date } {
     const startDate = new Date(date);
     const endDate = new Date(date);
+    try {
+      switch (period) {
+        case Period.DAILY:
+          startDate.setHours(0, 0, 0, 0);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case Period.WEEKLY:
+          startDate.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+          endDate.setDate(startDate.getDate() + 6);
+          break;
+        case Period.MONTHLY:
+          startDate.setDate(1);
+          endDate.setMonth(endDate.getMonth() + 1);
+          endDate.setDate(0);
+          break;
+        case Period.YEARLY:
+          startDate.setMonth(0, 1);
+          endDate.setMonth(11, 31);
+          break;
+      }
 
-    switch (period) {
-      case Period.DAILY:
-        startDate.setHours(0, 0, 0, 0);
-        endDate.setHours(23, 59, 59, 999);
-        break;
-      case Period.WEEKLY:
-        startDate.setDate(date.getDate() - ((date.getDay() + 6) % 7));
-        endDate.setDate(startDate.getDate() + 6);
-        break;
-      case Period.MONTHLY:
-        startDate.setDate(1);
-        endDate.setMonth(endDate.getMonth() + 1);
-        endDate.setDate(0);
-        break;
-      case Period.YEARLY:
-        startDate.setMonth(0, 1);
-        endDate.setMonth(11, 31);
-        break;
+      return { startDate, endDate };
+    } catch (error) {
+      this.handleError(
+        error,
+        'Error calculating date range',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
-
-    return { startDate, endDate };
   }
 
-  //async calculateEquipmentStatistics(equipmentId: number, period: Period, date: Date): Promise<EquipmentStatisticsDto> {
-  //  try {
-  //    const { startDate, endDate } = this.getDateRangeByPeriod(date, period);
+  async generateEquipmentStatistics(equipmentStatisticsDto: EquipmentStatisticsDto) {
+    const {equipmentId,date,period} = equipmentStatisticsDto
+    try {
+      const { startDate, endDate } = this.getDateRangeByPeriod(date, period);
 
-  //    // Obtener estadísticas por género
-  //    const genderStats = await this.calculateGenderStats(equipmentId, startDate, endDate);
+      const [existingStats, genderStats, equipment] = await Promise.all([
+        this.equipmentStatistics.findFirst({
+          where: {
+            equipmentId,
+            period,
+            date: {
+              gte: startDate,
+              lte: endDate,
+            }
+          },
+        }),
+        this.calculateGenderStats(equipmentId, TargetType.EQUIPMENT),
+        this.findEquipmentById(equipmentId),
+      ]);
 
-  //    // Calcular usos totales
-  //    const totalUses = genderStats.reduce((sum, stat) => sum + stat.useCount, 0);
 
-  //    // Calcular popularityScore (ejemplo: basado en el promedio de usos diarios)
-  //    const daysInPeriod = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-  //    const popularityScore = totalUses / daysInPeriod;
+      const genderStatsData = (genderStats?.length ? genderStats.map(stat => ({
+        gender: stat.gender,
+        useCount: stat.count 
+      })) : [])
 
-  //    return {
-  //      period,
-  //      date,
-  //      equipmentId,
-  //      totalUses,
-  //      popularityScore,
-  //      genderStats
-  //    };
-  //  } catch (error) {
-  //    this.handleError(
-  //      error,
-  //      'Error calculating equipment statistics',
-  //      HttpStatus.INTERNAL_SERVER_ERROR
-  //    );
-  //  }
-  //}
+      if (existingStats) {
+        const updatedStats = this.equipmentStatistics.update({
+          where: { id: existingStats.id },
+          data: {
+            equipmentId: existingStats.equipmentId,
+            popularityScore: equipment.score,
+            totalUses: equipment.totalRatings,
+            genderStats: {
+              deleteMany: {},
+              ...(genderStatsData.length > 0 && {
+                createMany: {
+                  data: genderStatsData,
+                },
+              }),
+            }
+          },
+          include: {
+            genderStats:true
+          }
+        })
+        this.logger.log(`Statistics updated for period ${period} and date ${date}`);
+        return updatedStats;
+      }
 
-  //private async calculateGenderStats(
-  //  equipmentId: number, 
-  //  startDate: Date, 
-  //  endDate: Date
-  //): Promise<{ gender: Gender; useCount: number }[]> {
-  //  // Realizamos la agrupación por género en una única consulta
-  //  const genderStats = await this.rating.groupBy({
-  //    by: ['user.gender'], // Agrupamos por el campo `user.gender`
-  //    _count: {
-  //      id: true, // Contamos las filas agrupadas
-  //    },
-  //    where: {
-  //      targetId: equipmentId.toString(),
-  //      targetType: 'EQUIPMENT',
-  //      user: {
-  //        createdAt: {
-  //          gte: startDate,
-  //          lte: endDate,
-  //        },
-  //      },
-  //    },
-  //  });
+      const equipmentStats = await this.equipmentStatistics.create({
+        data: {
+          period,
+          date,
+          equipmentId,
+          popularityScore: equipment.score,
+          totalUses: equipment.totalRatings,
+          ...(genderStatsData.length > 0 && {
+            genderStats: {
+              createMany: {
+                data: genderStatsData,
+              },
+            },
+          }),
+        },
+        include: {
+          genderStats: true
+        }
+      })
+
+      return equipmentStats
+
+
+    } catch (error) {
+      this.handleError(
+        error,
+        'Error generating equipment statistics',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async findEquipmentStatsById(statisticsId: string) {
   
-  //  // Retornamos los datos con el formato requerido
-  //  return genderStats.map(stat => ({
-  //    gender: stat['user.gender'] as Gender,
-  //    useCount: stat._count.id,
-  //  }));
-  //}
+    try {
+      const statistic = await this.equipmentStatistics.findUnique({
+        where: { id: statisticsId },
+        include: { genderStats: true },
+      });
+      if (!statistic) {
+        throw new RpcException({
+          status: HttpStatus.NOT_FOUND,
+          message: `Statistics with ID ${statisticsId} not found.`,
+        });
+      }
   
-  //async getEquipmentTrends(equipmentId: number, period: Period, numberOfPeriods: number = 12) {
-  //  try {
-  //    const trends = [];
-  //    const currentDate = new Date();
+      return statistic;
 
-  //    for (let i = 0; i < numberOfPeriods; i++) {
-  //      const date = new Date(currentDate);
-        
-  //      switch (period) {
-  //        case Period.DAILY:
-  //          date.setDate(date.getDate() - i);
-  //          break;
-  //        case Period.WEEKLY:
-  //          date.setDate(date.getDate() - (i * 7));
-  //          break;
-  //        case Period.MONTHLY:
-  //          date.setMonth(date.getMonth() - i);
-  //          break;
-  //        case Period.YEARLY:
-  //          date.setFullYear(date.getFullYear() - i);
-  //          break;
-  //      }
+    } catch (error) {
+      this.handleError(
+        error,
+        `Error retrieving equipment statistics with ID ${statisticsId}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+  
 
-  //      const stats = await this.calculateEquipmentStatistics(equipmentId, period, date);
-  //      trends.push(stats);
-  //    }
+  async getEquipmentStatistics(period:Period,date:Date) {
+    try {
+      const { startDate, endDate } = this.getDateRangeByPeriod(date, period);
+   
+      const [popularEquipment, topRated] = await Promise.all([
+        this.findMostPopularEquipment(startDate, endDate),
+        this.findTopRatedEquipment(startDate, endDate),
+      ]);
 
-  //    return trends.reverse();
-  //  } catch (error) {
-  //    this.handleError(
-  //      error,
-  //      'Error calculating equipment trends',
-  //      HttpStatus.INTERNAL_SERVER_ERROR
-  //    );
-  //  }
-  //}
+      if (!popularEquipment.length && !topRated.length) {
+        throw new RpcException({
+          status: HttpStatus.NOT_FOUND,
+          message: 'No data found for the specified period.',
+        });
+      }
 
-  //async compareEquipmentPopularity(equipmentIds: number[], period: Period, date: Date) {
-  //  try {
-  //    const comparisons = await Promise.all(
-  //      equipmentIds.map(id => this.calculateEquipmentStatistics(id, period, date))
-  //    );
+      
+      return {
+        popularEquipment,
+        topRated,
+      };
+    } catch (error) {
+      this.handleError(
+        error,
+        'Error retrieving equipment statistics',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+    
+  }
+  
+  async deleteEquipmentStatistics(statisticsId: string) {
+    try {
 
-  //    return comparisons.sort((a, b) => b.popularityScore - a.popularityScore);
-  //  } catch (error) {
-  //    this.handleError(
-  //      error,
-  //      'Error comparing equipment popularity',
-  //      HttpStatus.INTERNAL_SERVER_ERROR
-  //    );
-  //  }
-  //}
+      const existingStats = await this.findEquipmentStatsById(statisticsId)
 
-  //async getMostPopularEquipment(limit: number = 10, period: Period = Period.MONTHLY) {
-  //  try {
-  //    const currentDate = new Date();
-  //    const { startDate, endDate } = this.getDateRangeByPeriod(currentDate, period);
+      await this.equipmentStatistics.update({
+        where: { id: existingStats.id },
+        data: {
+          genderStats: {
+            deleteMany: {} 
+          }
+        }
+      });
 
-  //    // Esta implementación dependerá de tu estructura de datos real
-  //    const popularEquipment = await this.rating.groupBy({
-  //      by: ['targetId'],
-  //      where: {
-  //        targetType: 'EQUIPMENT',
-  //        createdAt: {
-  //          gte: startDate,
-  //          lte: endDate
-  //        }
-  //      },
-  //      _count: {
-  //        targetId: true
-  //      },
-  //      orderBy: {
-  //        _count: {
-  //          targetId: 'desc'
-  //        }
-  //      },
-  //      take: limit
-  //    });
+      const deletedStats = await this.equipmentStatistics.delete({
+        where: { id: statisticsId },
+      });
 
-  //    return popularEquipment.map(item => ({
-  //      equipmentId: parseInt(item.targetId),
-  //      useCount: item._count.targetId
-  //    }));
-  //  } catch (error) {
-  //    this.handleError(
-  //      error,
-  //      'Error getting most popular equipment',
-  //      HttpStatus.INTERNAL_SERVER_ERROR
-  //    );
-  //  }
-  //}
+      this.logger.log(`Statistics with ID ${statisticsId} successfully deleted`);
+      return {
+        message: 'Statistics deleted successfully',
+        deletedStats
+      };
+
+    } catch (error) {
+      this.handleError(
+        error,
+        `Error deleting equipment statistics with ID ${statisticsId}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+
+  private async findMostPopularEquipment(startDate: Date, endDate: Date) {
+    return this.equipmentStatistics.findMany({
+      where: { date: { gte: startDate, lte: endDate } },
+      orderBy: { totalUses: 'desc' },
+      include: { genderStats: true },
+      take: EquipmentStatsService.TOP_ITEMS_LIMIT,
+    });
+  }
+
+  private async findTopRatedEquipment(startDate: Date, endDate: Date) {
+    return this.equipmentStatistics.findMany({
+      where: { date: { gte: startDate, lte: endDate } },
+      orderBy: { popularityScore: 'desc' },
+      include: { genderStats: true },
+      take: EquipmentStatsService.TOP_ITEMS_LIMIT,
+    });
+  }
+
+  private async calculateGenderStats(
+    targetId: number, targetType: TargetType
+  ) {
+
+    try {
+      return await firstValueFrom(
+        this.client.send('calculate.gender.stats.by.target', { targetId, targetType })
+      )
+    } catch (error) {
+      this.logger.error('Error getting statistics equipment', error);
+      throw error;
+    }
+
+  }
+
+  private async findEquipmentById(equipmentId: number) {
+    try {
+      return await firstValueFrom(
+        this.client.send('find.one.equipment', { id: equipmentId })
+      )
+    } catch (error) {
+      this.logger.error('Error finding equipment', error);
+      throw error;
+    }
+  }
+
 }
