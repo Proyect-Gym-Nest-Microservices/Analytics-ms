@@ -5,12 +5,14 @@ import * as joi from 'joi';
 interface EnvVars{
     PORT: number;
     DATABASE_URL: string,
+    DATABASE_URL_TEST: string,
     NATS_SERVERS: string[];
 }
 
 const envsSchema = joi.object({
     PORT: joi.number().required(),
     DATABASE_URL: joi.string().required(),
+    DATABASE_URL_TEST: joi.string().required(),
     NATS_SERVERS: joi.array().items(joi.string()).required()
 }).unknown(true)
 
@@ -29,5 +31,6 @@ const envsVars: EnvVars = value;
 export const envs = {
     PORT: envsVars.PORT,
     DATABASE_URL: envsVars.DATABASE_URL,
+    DATABASE_URL_TEST: envsVars.DATABASE_URL_TEST,
     NATS_SERVERS: envsVars.NATS_SERVERS,
 }

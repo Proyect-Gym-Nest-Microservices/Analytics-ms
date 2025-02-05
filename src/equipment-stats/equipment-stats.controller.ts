@@ -2,9 +2,9 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { EquipmentStatsService } from './equipment-stats.service';
 import { EquipmentStatisticsDto } from './dto/equipment.statistics.dto';
-import { DatePeriodDto } from 'src/common/dto/date-period.dto';
-import { MongoIdDto } from 'src/common/dto/mongo-id.dto';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { DatePeriodDto } from '../common/dto/date-period.dto';
+import { MongoIdDto } from '../common/dto/mongo-id.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller()
 export class EquipmentStatsController {

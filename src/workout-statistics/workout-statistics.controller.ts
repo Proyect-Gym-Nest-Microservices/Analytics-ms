@@ -1,10 +1,10 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { WorkoutStatisticsService } from './workout-statistics.service';
-import { DatePeriodDto } from 'src/common/dto/date-period.dto';
-import { MongoIdDto } from 'src/common/dto/mongo-id.dto';
+import { DatePeriodDto } from '../common/dto/date-period.dto';
+import { MongoIdDto } from '../common/dto/mongo-id.dto';
 import { WorkoutStatisticsDto } from './dto/workout-statistics.dto';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller()
 export class WorkoutStatisticsController {

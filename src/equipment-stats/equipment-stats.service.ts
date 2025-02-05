@@ -1,12 +1,12 @@
 import { HttpStatus, Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { NATS_SERVICE } from 'src/config';
+import { NATS_SERVICE } from '../config/services.config';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { PrismaClient } from '@prisma/client';
-import { Period } from 'src/common/enums/analytics.enum';
+import { Period } from '../common/enums/analytics.enum';
 import { firstValueFrom } from 'rxjs';
-import { TargetType } from 'src/common/enums/target-type.enum';
+import { TargetType } from '../common/enums/target-type.enum';
 import { EquipmentStatisticsDto } from './dto/equipment.statistics.dto';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class EquipmentStatsService extends PrismaClient implements OnModuleInit {

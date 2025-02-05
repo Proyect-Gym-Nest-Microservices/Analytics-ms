@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { envs, NATS_SERVICE } from 'src/config';
+import { envs } from '../config/envs.config';
+import { NATS_SERVICE } from '../config/services.config';
 
 @Module({
     imports: [
